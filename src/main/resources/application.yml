@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: spring-batch
+  datasource:
+    url: jdbc:postgresql://localhost:5432/batch?currentSchema=batch
+    username: postgres
+    password: admin
+
+  batch:
+    jdbc:
+      initialize-schema: always
+
+  jpa:
+    hibernate:
+      ddl-auto: update
