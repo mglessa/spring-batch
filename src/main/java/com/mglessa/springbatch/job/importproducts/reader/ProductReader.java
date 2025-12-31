@@ -5,34 +5,38 @@ import com.mglessa.springbatch.job.importproducts.dto.ProductDTO;
 import com.mglessa.springbatch.job.importproducts.dto.ProductsResponseDTO;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.Iterator;
-import java.util.List;
+
 
 @Component
 public class ProductReader implements ItemReader<Product> {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestClient restClient;
     private Iterator<Product> iterator;
+
+    public ProductReader(RestClient.Builder builder) {
+        this.restClient = builder
+                .baseUrl("https://dummyjson.com/")
+                .build();
+    }
 
     @Override
     public Product read()  {
         if(iterator == null) {
-            ProductsResponseDTO response = restTemplate.getForObject(
-                    "https://dummyjson.com/products",
-                    ProductsResponseDTO.class
-            );
+            ProductsResponseDTO response = restClient.get()
+                    .uri("/products")
+                    .retrieve()
+                    .body(ProductsResponseDTO.class);
 
             if (response == null || response.getProducts() == null) {
                 return null;
             }
 
-            List<Product> products = response.getProducts().stream()
+            iterator = response.getProducts().stream()
                     .map(this::toEntity)
-                    .toList();
-
-            iterator = products.iterator();
+                    .iterator();
         }
 
         return iterator.hasNext() ? iterator.next() : null;

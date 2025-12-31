@@ -5,36 +5,37 @@ import com.mglessa.springbatch.job.importusers.dto.UsersResponseDTO;
 import com.mglessa.springbatch.domain.user.User;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.Iterator;
-import java.util.List;
 
 @Component
 public class UserReader implements ItemReader<User> {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestClient restClient;
     private Iterator<User> iterator;
+
+    public UserReader(RestClient.Builder builder) {
+        this.restClient = builder
+                .baseUrl("https://dummyjson.com")
+                .build();
+    }
 
     @Override
     public User read() {
-
         if (iterator == null) {
-            UsersResponseDTO response =
-                    restTemplate.getForObject(
-                            "https://dummyjson.com/users",
-                            UsersResponseDTO.class
-                    );
+            UsersResponseDTO response = restClient.get()
+                    .uri("/users")
+                    .retrieve()
+                    .body(UsersResponseDTO.class);
 
             if (response == null || response.getUsers() == null) {
                 return null;
             }
 
-            List<User> users = response.getUsers().stream()
+            iterator = response.getUsers().stream()
                     .map(this::toEntity)
-                    .toList();
-
-            iterator = users.iterator();
+                    .iterator();
         }
 
         return iterator.hasNext() ? iterator.next() : null;
